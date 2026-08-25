@@ -5,7 +5,7 @@ description: Use when an AI coding agent is about to deploy, promote, roll back,
 
 # HOL Guard for Vercel CLI safety
 
-Use HOL Guard as a pre-execution command-safety check for Vercel CLI operations.
+Use HOL Guard as a pre-execution safety layer for Vercel CLI operations.
 
 HOL Guard release/3.0 includes `command.platform.vercel` coverage for production-impacting Vercel operations such as removing deployments or projects and deploying, promoting, or rolling back production. It preserves safe inspection/help counterparts such as help, project inspection, and promotion status.
 
@@ -20,7 +20,21 @@ hol-guard --version
 
 If `pipx` is unavailable, do not silently install into the project's Python environment. Explain that an isolated CLI install is recommended.
 
-## Guard a Vercel command
+## Prefer a protected agent runtime
+
+When the current coding agent is one of HOL Guard's supported harnesses, install Guard into that harness and run the agent through Guard so review/approval decisions can happen at the actual tool boundary:
+
+```bash
+hol-guard install <harness>
+hol-guard run <harness> --dry-run
+hol-guard run <harness>
+```
+
+Supported harnesses include Claude Code, Codex, Copilot CLI, Cursor, Gemini CLI, Hermes, OpenClaw, OpenCode, and Antigravity. Use `hol-guard detect --json` when the active harness is unclear.
+
+## Preflight an exact Vercel command
+
+Before a production-impacting Vercel CLI operation:
 
 1. Build the exact `vercel` command that would otherwise run.
 2. Do **not** execute it yet.
@@ -31,8 +45,8 @@ hol-guard command test '<exact vercel command>' --json
 ```
 
 4. Read the JSON result.
-5. Execute the original Vercel command **exactly once** only when HOL Guard explicitly classifies it as benign and the minimum action is `allow`.
-6. For `review`, `block`, unknown/malformed output, CLI errors, or timeouts, do not run the Vercel command. Report the Guard result and ask for the appropriate review/approval path instead.
+5. If the result is explicitly benign with minimum action `allow`, the command passed this command-safety preflight.
+6. If the result requires `review` or `block`, or output is unknown/malformed, the CLI errors, or the check times out, do not bypass the decision. When running through a Guard-protected harness, let the Guard runtime own the review/approval flow. Otherwise stop and surface the exact command and Guard result to the user.
 
 `hol-guard command test` is side-effect free. It classifies the command; it does not execute the Vercel command, create a final approval, evaluate the complete runtime policy, or record a receipt.
 
@@ -64,7 +78,7 @@ inspect it:
 hol-guard command test 'vercel promote my-deployment.vercel.app' --json
 ```
 
-Do not run `vercel promote ...` unless the result is explicitly benign with minimum action `allow`.
+If Guard requires review, do not rewrite or split the command to evade the result. Use the protected runtime's review path or stop for user review.
 
 ## Safety rules
 
@@ -72,7 +86,7 @@ Do not run `vercel promote ...` unless the result is explicitly benign with mini
 - Never split one risky command into multiple commands to bypass a Guard decision.
 - Never treat scanner or CLI failure as approval.
 - Never read `.env` files to satisfy Guard.
-- Do not claim HOL Guard is a native Vercel runtime integration. This skill uses HOL Guard's command-safety engine before Vercel CLI execution.
+- Do not claim HOL Guard is a native Vercel runtime integration. This skill applies HOL Guard's command-safety engine before Vercel CLI execution.
 - Guard Cloud is optional for this workflow.
 - Preserve the user's target project, team, scope, and CLI flags exactly when inspecting the command.
 
