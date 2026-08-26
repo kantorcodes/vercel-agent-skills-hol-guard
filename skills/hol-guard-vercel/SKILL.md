@@ -22,15 +22,21 @@ If `pipx` is unavailable, do not silently install into the project's Python envi
 
 ## Prefer a protected agent runtime
 
-When the current coding agent is one of HOL Guard's supported harnesses, install Guard into that harness and run the agent through Guard so review/approval decisions can happen at the actual tool boundary:
+Use HOL Guard's own detection result rather than maintaining a hand-written list of supported harness identifiers:
 
 ```bash
-hol-guard install <harness>
-hol-guard run <harness> --dry-run
-hol-guard run <harness>
+hol-guard detect --json
 ```
 
-Supported harnesses include Claude Code, Codex, Copilot CLI, Cursor, Gemini CLI, Hermes, OpenClaw, OpenCode, and Antigravity. Use `hol-guard detect --json` when the active harness is unclear.
+If detection reports a supported local coding-agent harness, use the exact identifier it returns when installing and launching the protected session so review/approval decisions can happen at the actual tool boundary:
+
+```bash
+hol-guard install <detected-harness>
+hol-guard run <detected-harness> --dry-run
+hol-guard run <detected-harness>
+```
+
+If detection reports no supported harness, do not claim the current session is protected and do not guess an adapter name.
 
 ## Preflight an exact Vercel command
 
